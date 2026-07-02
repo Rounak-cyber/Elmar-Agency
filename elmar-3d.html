@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elmar — Crafting Exclusivity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --obsidian: #0e0e10; --deep: #131318; --ivory: #F5F0E8;
+      --gold: #C9A96E; --gold-light: #e0c98a; --ash: #8A8A7A;
+      --serif: 'Cormorant Garamond', serif; --sans: 'Jost', sans-serif;
+    }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body { background: var(--obsidian); color: var(--ivory); font-family: var(--sans); font-weight: 300; overflow-x: hidden; }
+
+    /* THREE.JS CANVAS — fixed full-page background 3D environment */
+    #three-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+    #site-wrapper { position: relative; z-index: 1; }
+
+    /* LIQUID GLASS utility — frosted panel with refraction edges */
+    .glass {
+      background: rgba(255,255,255,0.055);
+      backdrop-filter: blur(22px) saturate(1.4);
+      -webkit-backdrop-filter: blur(22px) saturate(1.4);
+      border: 1px solid rgba(201,169,110,0.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.15), 0 8px 40px rgba(0,0,0,0.35);
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 60px; transition: all 0.5s cubic-bezier(0.16,1,0.3,1);
+    }
+    nav.scrolled {
+      background: rgba(14,14,16,0.75);
+      backdrop-filter: blur(24px) saturate(1.6);
+      -webkit-backdrop-filter: blur(24px) saturate(1.6);
+      border-bottom: 1px solid rgba(201,169,110,0.15);
+      padding: 16px 60px;
+    }
+    .nav-logo { font-family: var(--serif); font-size: 22px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory); text-decoration: none; }
+    .nav-links { display: flex; gap: 36px; list-style: none; }
+    .nav-links a { font-size: 10px; font-weight: 300; letter-spacing: 0.28em; text-transform: uppercase; color: var(--ivory); text-decoration: none; opacity: 0.6; transition: opacity 0.3s, color 0.3s; cursor: pointer; }
+    .nav-links a:hover { opacity: 1; color: var(--gold); }
+
+    /* HERO */
+    #hero { position: relative; height: 100vh; min-height: 640px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+    /* Liquid glass hero panel */
+    .hero-glass-panel {
+      position: relative; padding: 64px 72px; max-width: 620px; border-radius: 2px;
+      background: rgba(14,14,16,0.38);
+      backdrop-filter: blur(28px) saturate(1.5);
+      -webkit-backdrop-filter: blur(28px) saturate(1.5);
+      border-top: 1px solid rgba(255,255,255,0.14);
+      border-left: 1px solid rgba(255,255,255,0.10);
+      border-right: 1px solid rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(0,0,0,0.3);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 32px 80px rgba(0,0,0,0.6), 0 0 120px rgba(201,169,110,0.04);
+      opacity: 0; transform: translateY(30px);
+      animation: heroIn 1.4s 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    /* Signature gold hairline */
+    .gold-hairline { width: 0; height: 1px; background: linear-gradient(to right, var(--gold), transparent); margin-bottom: 36px; animation: drawHair 1.8s 1.2s cubic-bezier(0.16,1,0.3,1) forwards; }
+    .hero-eyebrow { font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gold); margin-bottom: 28px; display: block; opacity: 0; animation: fadeUp 1s 1.0s forwards; }
+    .hero-title { font-family: var(--serif); font-size: clamp(44px, 5.5vw, 80px); font-weight: 300; line-height: 1.06; letter-spacing: 0.03em; color: var(--ivory); opacity: 0; animation: fadeUp 1s 1.2s forwards; }
+    .hero-title em { font-style: italic; color: var(--gold); }
+    .hero-sub { margin-top: 24px; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(245,240,232,0.4); font-weight: 300; opacity: 0; animation: fadeUp 1s 1.4s forwards; }
+
+    /* Glass CTA button — hover shimmer sweep + click scale */
+    .btn-glass {
+      display: inline-flex; align-items: center; gap: 14px; margin-top: 44px;
+      padding: 15px 32px; font-family: var(--sans); font-size: 10px;
+      letter-spacing: 0.3em; text-transform: uppercase; color: var(--ivory);
+      background: rgba(201,169,110,0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(201,169,110,0.35); border-top: 1px solid rgba(255,255,255,0.18);
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: background 0.35s, border-color 0.35s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s;
+      opacity: 0; animation: fadeUp 1s 1.6s forwards;
+    }
+    .btn-glass::before {
+      content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      transition: left 0.5s;
+    }
+    .btn-glass:hover { background: rgba(201,169,110,0.18); border-color: rgba(201,169,110,0.7); transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 32px rgba(201,169,110,0.2); }
+    .btn-glass:hover::before { left: 140%; }
+    .btn-glass:active { transform: translateY(0) scale(0.97); box-shadow: 0 2px 12px rgba(201,169,110,0.1); }
+    .btn-arrow { color: var(--gold); font-size: 16px; transition: transform 0.3s; display: inline-block; }
+    .btn-glass:hover .btn-arrow { transform: translateX(4px); }
+
+    .scroll-hint { position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: 0; animation: fadeUp 1s 2.2s forwards; }
+    .scroll-hint span { font-size: 8px; letter-spacing: 0.35em; text-transform: uppercase; color: var(--ash); }
+    .scroll-pulse { width: 1px; height: 44px; background: linear-gradient(to bottom, var(--gold) 0%, transparent 100%); animation: scrollPulse 2.2s ease-in-out infinite; }
+
+    /* SECTIONS */
+    .section { padding: 120px 80px; position: relative; }
+    .section-label { display: block; font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+    .section-heading { font-family: var(--serif); font-size: clamp(30px, 3.8vw, 52px); font-weight: 300; line-height: 1.15; }
+
+    /* Scroll reveal */
+    .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.1s; } .reveal-d2 { transition-delay: 0.2s; } .reveal-d3 { transition-delay: 0.3s; } .reveal-d4 { transition-delay: 0.4s; }
+
+    /* ABOUT */
+    #about { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .about-body { font-size: 15px; line-height: 1.9; color: rgba(245,240,232,0.55); max-width: 480px; }
+    .about-body p + p { margin-top: 20px; }
+    .stat-row { display: flex; gap: 52px; margin-top: 52px; padding-top: 40px; border-top: 1px solid rgba(201,169,110,0.15); }
+    .stat-num { display: block; font-family: var(--serif); font-size: 42px; font-weight: 300; color: var(--ivory); letter-spacing: -0.02em; }
+    .stat-lbl { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ash); margin-top: 4px; }
+
+    /* About glass card with embedded Three.js sub-scene */
+    .about-glass-card {
+      position: relative; padding: 52px; border-radius: 2px; min-height: 420px;
+      display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border-top: 1px solid rgba(255,255,255,0.12); border-left: 1px solid rgba(255,255,255,0.08);
+      border-right: 1px solid rgba(0,0,0,0.25); border-bottom: 1px solid rgba(0,0,0,0.25);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+    .about-card-label { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ash); position: relative; z-index: 2; }
+    .about-card-title { font-family: var(--serif); font-size: 28px; font-weight: 300; font-style: italic; color: var(--ivory); margin-top: 8px; position: relative; z-index: 2; }
+
+    /* PORTFOLIO */
+    #portfolio { padding: 120px 80px; }
+    .portfolio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 64px; }
+    .project-card { position: relative; aspect-ratio: 3/4; overflow: hidden; cursor: pointer; }
+    .project-card:first-child { grid-row: span 2; aspect-ratio: auto; }
+    .proj-bg { position: absolute; inset: 0; transition: transform 0.9s cubic-bezier(0.16,1,0.3,1); }
+    .project-card:hover .proj-bg { transform: scale(1.06); }
+    .pb1 { background: radial-gradient(ellipse at 40% 30%, #3d2e18, #0e0e10); }
+    .pb2 { background: radial-gradient(ellipse at 60% 70%, #1a2d3d, #0e0e10); }
+    .pb3 { background: radial-gradient(ellipse at 30% 60%, #2a2016, #0e0e10); }
+    .pb4 { background: radial-gradient(ellipse at 70% 40%, #1a2e1e, #0e0e10); }
+
+    /* Liquid glass info panel slides up on hover */
+    .project-glass-info {
+      position: absolute; bottom: 0; left: 0; right: 0; padding: 28px;
+      background: rgba(10,10,12,0.55);
+      backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      border-top: 1px solid rgba(201,169,110,0.2);
+      transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+    }
+    .project-card:hover .project-glass-info { transform: translateY(0); }
+    .proj-cat { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .proj-name { font-family: var(--serif); font-size: 22px; font-weight: 300; color: var(--ivory); margin-bottom: 6px; }
+    .proj-desc { font-size: 12px; color: rgba(245,240,232,0.5); letter-spacing: 0.04em; }
+    .proj-index { position: absolute; top: 20px; left: 20px; font-family: var(--serif); font-size: 11px; font-style: italic; color: var(--gold); opacity: 0.6; }
+    .proj-ripple-anchor { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; border: 1px solid rgba(201,169,110,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--gold); background: rgba(201,169,110,0.06); transition: background 0.3s, transform 0.3s; }
+    .project-card:hover .proj-ripple-anchor { background: rgba(201,169,110,0.2); transform: scale(1.1); }
+
+    /* SERVICES */
+    #services { padding: 120px 80px; }
+    .services-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 64px; padding-bottom: 36px; border-bottom: 1px solid rgba(201,169,110,0.12); }
+    .services-intro { font-size: 14px; line-height: 1.85; color: rgba(245,240,232,0.45); max-width: 360px; }
+    .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    .service-tile {
+      padding: 40px 36px; position: relative; overflow: hidden;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(201,169,110,0.08);
+      cursor: default; transition: background 0.4s, border-color 0.4s, transform 0.3s;
+    }
+    .service-tile:hover { background: rgba(201,169,110,0.07); border-color: rgba(201,169,110,0.25); transform: translateY(-3px); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    .service-tile::after { content: ''; position: absolute; bottom: 0; left: 0; height: 1px; width: 0; background: var(--gold); transition: width 0.5s cubic-bezier(0.16,1,0.3,1); }
+    .service-tile:hover::after { width: 100%; }
+    .svc-num { font-family: var(--serif); font-size: 13px; font-style: italic; color: var(--gold); display: block; margin-bottom: 20px; }
+    .svc-name { font-family: var(--serif); font-size: 21px; font-weight: 300; color: var(--ivory); margin-bottom: 14px; line-height: 1.2; }
+    .svc-desc { font-size: 12px; line-height: 1.78; color: rgba(245,240,232,0.45); }
+
+    /* TESTIMONIALS */
+    #testimonials { padding: 120px 80px; }
+    .testimonials-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 2px; margin-top: 64px; }
+    .testi-card {
+      padding: 44px; position: relative; overflow: hidden;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
+      border-top: 1px solid rgba(255,255,255,0.1); border-left: 1px solid rgba(255,255,255,0.06);
+      border-right: 1px solid rgba(0,0,0,0.2); border-bottom: 1px solid rgba(0,0,0,0.2);
+      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s;
+    }
+    .testi-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,169,110,0.15); }
+    .testi-quote-mark { font-family: var(--serif); font-size: 120px; font-weight: 300; color: rgba(201,169,110,0.07); line-height: 1; position: absolute; top: -16px; left: 20px; pointer-events: none; }
+    .testi-text { font-family: var(--serif); font-size: 16px; font-style: italic; font-weight: 300; color: rgba(245,240,232,0.82); line-height: 1.8; margin-bottom: 32px; position: relative; }
+    .testi-sig { display: flex; align-items: center; gap: 14px; }
+    .testi-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(201,169,110,0.3); background: rgba(201,169,110,0.1); flex-shrink: 0; }
+    .testi-name { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory); }
+    .testi-role { font-size: 10px; color: var(--ash); margin-top: 3px; letter-spacing: 0.08em; }
+
+    /* CONTACT */
+    #contact { padding: 120px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 100px; align-items: start; }
+    .contact-copy { font-size: 14px; line-height: 1.9; color: rgba(245,240,232,0.5); margin: 28px 0 44px; }
+    .contact-detail-label { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 4px; }
+    .contact-detail-value { font-size: 14px; color: rgba(245,240,232,0.7); margin-bottom: 20px; display: block; }
+    .form-glass {
+      padding: 48px;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4);
+      border-top: 1px solid rgba(255,255,255,0.1); border-left: 1px solid rgba(255,255,255,0.07);
+      border-right: 1px solid rgba(0,0,0,0.2); border-bottom: 1px solid rgba(0,0,0,0.2);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .form-group { margin-bottom: 28px; }
+    .form-group label { display: block; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(201,169,110,0.7); margin-bottom: 10px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; background: rgba(255,255,255,0.04); border: none; border-bottom: 1px solid rgba(201,169,110,0.2); padding: 10px 0; font-family: var(--sans); font-size: 14px; font-weight: 300; color: var(--ivory); outline: none; resize: none; transition: border-color 0.3s; appearance: none; }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(245,240,232,0.25); }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-bottom-color: var(--gold); }
+    .form-group select option { background: #1a1a1e; color: var(--ivory); }
+    .btn-submit { display: inline-flex; align-items: center; gap: 16px; padding: 16px 36px; margin-top: 8px; font-family: var(--sans); font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); background: var(--gold); border: none; cursor: pointer; transition: background 0.3s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s, gap 0.3s; }
+    .btn-submit:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,169,110,0.35); gap: 24px; }
+    .btn-submit:active { transform: translateY(0) scale(0.97); }
+
+    /* FOOTER */
+    footer { padding: 44px 80px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(201,169,110,0.12); }
+    .footer-logo { font-family: var(--serif); font-size: 18px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory); }
+    .footer-copy { font-size: 10px; color: var(--ash); letter-spacing: 0.1em; }
+    .footer-links { display: flex; gap: 28px; }
+    .footer-links a { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ash); text-decoration: none; transition: color 0.3s; }
+    .footer-links a:hover { color: var(--gold); }
+
+    /* KEYFRAMES */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes heroIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes drawHair { from { width: 0; } to { width: 120px; } }
+    @keyframes scrollPulse { 0%,100% { opacity: 0.3; transform: scaleY(0.8); } 50% { opacity: 1; transform: scaleY(1); } }
+
+    /* CSS Ripple feedback on card click */
+    .ripple { position: absolute; border-radius: 50%; background: rgba(201,169,110,0.25); transform: scale(0); animation: rippleAnim 0.7s linear; pointer-events: none; }
+    @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+    #scene-label { position: fixed; bottom: 28px; right: 32px; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(201,169,110,0.3); z-index: 10; pointer-events: none; }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } #three-canvas { display: none; } }
+    @media (max-width: 900px) {
+      nav { padding: 20px 28px; } nav.scrolled { padding: 14px 28px; } .nav-links { display: none; }
+      .hero-glass-panel { padding: 40px 36px; max-width: 95vw; }
+      .section { padding: 80px 28px; }
+      #about, #contact { grid-template-columns: 1fr; gap: 48px; }
+      .portfolio-grid { grid-template-columns: 1fr; } .project-card:first-child { grid-row: auto; }
+      .services-grid { grid-template-columns: 1fr; } .testimonials-grid { grid-template-columns: 1fr; }
+      .services-header { flex-direction: column; gap: 24px; align-items: flex-start; }
+      footer { flex-direction: column; gap: 20px; text-align: center; } .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- THREE.JS BACKGROUND CANVAS: persistent 3D environment behind all content -->
+<canvas id="three-canvas"></canvas>
+<div id="scene-label">Three.js · WebGL Scene</div>
+
+<div id="site-wrapper">
+
+  <!-- NAVIGATION: transparent → liquid glass on scroll -->
+  <nav id="main-nav">
+    <a href="#hero" class="nav-logo">Elmar</a>
+    <ul class="nav-links">
+      <li><a onclick="smoothScrollTo('about')">About</a></li>
+      <li><a onclick="smoothScrollTo('portfolio')">Work</a></li>
+      <li><a onclick="smoothScrollTo('services')">Services</a></li>
+      <li><a onclick="smoothScrollTo('testimonials')">Clients</a></li>
+      <li><a onclick="smoothScrollTo('contact')">Inquire</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO: liquid glass panel floats over live 3D scene -->
+  <section id="hero">
+    <div class="hero-glass-panel">
+      <!-- Signature drawn gold hairline -->
+      <div class="gold-hairline"></div>
+      <span class="hero-eyebrow">Est. 2009 &nbsp;·&nbsp; By invitation only</span>
+      <h1 class="hero-title">Crafting<br><em>Exclusivity</em></h1>
+      <p class="hero-sub">A creative agency for the discerning few</p>
+      <!-- Interactive: click triggers Three.js particle burst + smooth scroll -->
+      <button class="btn-glass" id="hero-cta" onclick="triggerHeroBurst(); smoothScrollTo('about')">
+        Discover Elmar <span class="btn-arrow">&#8594;</span>
+      </button>
+    </div>
+    <div class="scroll-hint">
+      <div class="scroll-pulse"></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- ABOUT: glass card hosts an embedded Three.js rotating totem -->
+  <section id="about" class="section">
+    <div>
+      <span class="section-label reveal">Our Philosophy</span>
+      <h2 class="section-heading reveal reveal-d1">Where restraint<br>becomes <em style="font-family:var(--serif);font-style:italic">power</em></h2>
+      <div class="about-body reveal reveal-d2" style="margin-top:28px">
+        <p>Elmar does not work with everyone. We are a studio built on the belief that true luxury is not proclaimed — it is felt. Each engagement begins with listening: understanding the legacy you carry and the vision you hold.</p>
+        <p style="margin-top:20px">Our practice spans brand strategy, visual identity, and bespoke digital experiences. We work with a select roster of eight clients at any given time, ensuring every detail receives the weight of our full attention.</p>
+      </div>
+      <div class="stat-row reveal reveal-d3">
+        <div><span class="stat-num">17</span><span class="stat-lbl">Years of practice</span></div>
+        <div><span class="stat-num">8</span><span class="stat-lbl">Active clients</span></div>
+        <div><span class="stat-num">34</span><span class="stat-lbl">Awards conferred</span></div>
+      </div>
+    </div>
+    <!-- Glass card: embedded Three.js sub-scene (rotating geometric totem) -->
+    <div class="about-glass-card reveal reveal-d2">
+      <!-- about-canvas hosts Interactive Element #2: rotating 3D totem, mouse-reactive -->
+      <canvas id="about-canvas" style="position:absolute;inset:0;width:100%;height:100%;border-radius:2px"></canvas>
+      <div style="position:relative;z-index:2">
+        <span class="about-card-label">London &nbsp;·&nbsp; Paris &nbsp;·&nbsp; New York</span>
+        <p class="about-card-title">Precision in every detail</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PORTFOLIO: glass info panels + ripple click feedback -->
+  <section id="portfolio" class="section">
+    <span class="section-label reveal">Selected Works</span>
+    <h2 class="section-heading reveal reveal-d1">Work that speaks<br>in whispers</h2>
+    <div class="portfolio-grid">
+      <div class="project-card reveal" onclick="cardRipple(event,this)">
+        <div class="proj-bg pb1"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0.07"><span style="font-family:var(--serif);font-size:220px;font-weight:300;color:var(--gold)">M</span></div></div>
+        <span class="proj-index">i.</span><div class="proj-ripple-anchor">&#8594;</div>
+        <div class="project-glass-info"><p class="proj-cat">Brand Identity</p><p class="proj-name">Maison Vercel</p><p class="proj-desc">Complete identity system for a Parisian couture house entering its third century.</p></div>
+      </div>
+      <div class="project-card reveal reveal-d1" onclick="cardRipple(event,this)">
+        <div class="proj-bg pb2"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0.06"><span style="font-family:var(--serif);font-size:110px;font-weight:300;color:var(--ivory)">AE</span></div></div>
+        <span class="proj-index">ii.</span><div class="proj-ripple-anchor">&#8594;</div>
+        <div class="project-glass-info"><p class="proj-cat">Digital Experience</p><p class="proj-name">Aether Estates</p><p class="proj-desc">An immersive digital portal for ultra-prime property acquisition.</p></div>
+      </div>
+      <div class="project-card reveal reveal-d2" onclick="cardRipple(event,this)">
+        <div class="proj-bg pb3"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0.08"><div style="width:90px;height:90px;border:1px solid var(--gold);border-radius:50%"></div></div></div>
+        <span class="proj-index">iii.</span><div class="proj-ripple-anchor">&#8594;</div>
+        <div class="project-glass-info"><p class="proj-cat">Brand Strategy</p><p class="proj-name">Nocturne Spirits</p><p class="proj-desc">Repositioning a heritage distillery as the world's most coveted pour.</p></div>
+      </div>
+      <div class="project-card reveal reveal-d3" onclick="cardRipple(event,this)">
+        <div class="proj-bg pb4"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0.06"><span style="font-family:var(--serif);font-size:130px;font-weight:300;color:var(--ivory)">&#8734;</span></div></div>
+        <span class="proj-index">iv.</span><div class="proj-ripple-anchor">&#8594;</div>
+        <div class="project-glass-info"><p class="proj-cat">Visual Identity</p><p class="proj-name">Orsa Capital</p><p class="proj-desc">Redefining how private equity communicates discretion and power.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES: glass tiles with animated gold underline -->
+  <section id="services" class="section">
+    <div class="services-header reveal">
+      <div><span class="section-label">What We Offer</span><h2 class="section-heading">Bespoke services<br>for singular ambitions</h2></div>
+      <p class="services-intro">Every offering is tailored. There are no templates here — only considered responses to what each client genuinely requires.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-tile reveal"><span class="svc-num">i.</span><h3 class="svc-name">Brand Strategy</h3><p class="svc-desc">Clarity of purpose distilled into a positioning that attracts the right audience and repels the wrong one.</p></div>
+      <div class="service-tile reveal reveal-d1"><span class="svc-num">ii.</span><h3 class="svc-name">Visual Identity</h3><p class="svc-desc">Marks, type systems, and palettes built to last decades — not trends. Identity that carries weight in every room it enters.</p></div>
+      <div class="service-tile reveal reveal-d2"><span class="svc-num">iii.</span><h3 class="svc-name">Digital Experiences</h3><p class="svc-desc">Websites conceived as acts of hospitality — designed to make the right visitor feel immediately, precisely welcome.</p></div>
+      <div class="service-tile reveal reveal-d1"><span class="svc-num">iv.</span><h3 class="svc-name">Print &amp; Editorial</h3><p class="svc-desc">Printed matter as cultural artefact. Annual reports and prospectuses that reward the reader who holds them.</p></div>
+      <div class="service-tile reveal reveal-d2"><span class="svc-num">v.</span><h3 class="svc-name">Creative Direction</h3><p class="svc-desc">An embedded creative eye for campaigns and launches that demand a unified point of view across every channel.</p></div>
+      <div class="service-tile reveal reveal-d3"><span class="svc-num">vi.</span><h3 class="svc-name">Private Advisory</h3><p class="svc-desc">Retainer-based access to Elmar's principals — confidential counsel for individuals and families of consequence.</p></div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS: glass cards with 3D CSS perspective tilt on hover -->
+  <section id="testimonials" class="section">
+    <span class="section-label reveal">Client Voices</span>
+    <h2 class="section-heading reveal reveal-d1" style="max-width:680px;font-style:italic">"The rarest quality in a creative partner: they understood what we needed before we could articulate it ourselves."</h2>
+    <div class="testimonials-grid">
+      <div class="testi-card reveal" data-tilt><div class="testi-quote-mark">"</div><p class="testi-text">Elmar brought a discipline to our brand that we hadn't found in fifteen years of working with agencies. There is no noise — only the essential.</p><div class="testi-sig"><div class="testi-avatar"></div><div><p class="testi-name">H.S.H. Prince Maximilian V.</p><p class="testi-role">Chairman, Kronenburg Group · Liechtenstein</p></div></div></div>
+      <div class="testi-card reveal reveal-d1" data-tilt><div class="testi-quote-mark">"</div><p class="testi-text">Working with a studio of this calibre is a fundamentally different experience. The attention, the discretion, the result — nothing like we had encountered before.</p><div class="testi-sig"><div class="testi-avatar"></div><div><p class="testi-name">Isabelle Fontaine-Duval</p><p class="testi-role">Founder, Maison Vercel · Paris</p></div></div></div>
+      <div class="testi-card reveal reveal-d2" data-tilt><div class="testi-quote-mark">"</div><p class="testi-text">We came to Elmar with a sixty-year-old brand at a crossroads. They found the thread that connected our past to the future we wanted to occupy.</p><div class="testi-sig"><div class="testi-avatar"></div><div><p class="testi-name">James Whitmore</p><p class="testi-role">Managing Director, Nocturne Spirits · Edinburgh</p></div></div></div>
+      <div class="testi-card reveal reveal-d3" data-tilt><div class="testi-quote-mark">"</div><p class="testi-text">The portfolio speaks for itself. What you won't read is how they handle a client — with the seriousness the work deserves and the warmth it requires.</p><div class="testi-sig"><div class="testi-avatar"></div><div><p class="testi-name">Adaeze Okonkwo-Brandt</p><p class="testi-role">Chief Executive, Orsa Capital · London</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- CONTACT: liquid glass form panel -->
+  <section id="contact">
+    <div class="reveal" style="padding:120px 0 120px 80px">
+      <span class="section-label">Begin a Conversation</span>
+      <h2 class="section-heading">The first step<br>is always quiet</h2>
+      <p class="contact-copy">We accept a small number of new engagements each year. All enquiries are held in strict confidence.</p>
+      <span class="contact-detail-label">Write to us</span><span class="contact-detail-value">studio@elmar.co</span>
+      <span class="contact-detail-label">Telephone</span><span class="contact-detail-value">+44 20 7946 0852</span>
+      <span class="contact-detail-label">Studio address</span><span class="contact-detail-value">12 Savile Row, London W1S 3PD</span>
+    </div>
+    <div class="form-glass reveal reveal-d2" style="margin:80px 80px 80px 0;align-self:center">
+      <div class="form-row">
+        <div class="form-group"><label>Given name</label><input type="text" placeholder="As you prefer to be addressed"></div>
+        <div class="form-group"><label>Surname</label><input type="text"></div>
+      </div>
+      <div class="form-group"><label>Private email</label><input type="email" placeholder="For our reply"></div>
+      <div class="form-group"><label>Nature of enquiry</label>
+        <select><option value="" disabled selected>Please select</option><option>Brand Strategy</option><option>Visual Identity</option><option>Digital Experience</option><option>Print &amp; Editorial</option><option>Creative Direction</option><option>Private Advisory</option><option>Open to your counsel</option></select>
+      </div>
+      <div class="form-group"><label>A few words about your situation</label><textarea rows="4" placeholder="Tell us what you're building, protecting, or imagining."></textarea></div>
+      <button class="btn-submit" onclick="submitForm(this)">Send enquiry <span style="font-size:16px">&#8594;</span></button>
+    </div>
+  </section>
+
+  <footer>
+    <span class="footer-logo">Elmar</span>
+    <span class="footer-copy">&#169; 2026 Elmar Studio Ltd. All rights reserved.</span>
+    <div class="footer-links"><a href="#">Privacy</a><a href="#">Colophon</a><a href="#">Instagram</a></div>
+  </footer>
+
+</div><!-- /site-wrapper -->
+
+<!-- THREE.JS r128 from cdnjs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   ELMAR 3D SCENE ENGINE
+   Three interactive Three.js elements:
+     1. Main hero scene: floating particle field + rotating orb
+        with mouse-parallax (mouse moves camera)
+     2. About card: isolated sub-scene with mouse-reactive rotating totem
+     3. Burst animation: triggered by CTA click (particle explosion)
+   Plus: CSS 3D perspective tilt on testimonial cards
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ─── GLOBAL MOUSE TRACKING for parallax ─────────────────────────────
+const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+document.addEventListener('mousemove', e => {
+  mouse.tx = (e.clientX / window.innerWidth)  * 2 - 1;
+  mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCENE 1 — MAIN BACKGROUND (full-page canvas)
+   - Ambient particle cloud (3000 points) — Interactive Element #3
+   - Central icosahedron orb with wireframe shell + orbiting rings
+   - Camera parallax follows mouse (smooth lerp)
+   - Burst: 80 line segments on CTA click
+   ═══════════════════════════════════════════════════════════════════ */
+(function initMainScene() {
+  const canvas = document.getElementById('three-canvas');
+  const W = window.innerWidth, H = window.innerHeight;
+
+  // Alpha:true = transparent background, shows body colour through
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x000000, 0);
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 200);
+  camera.position.set(0, 0, 8);
+
+  // ── Lighting ───────────────────────────────────────────────────
+  scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+
+  // Warm gold point light orbits the orb for a dynamic glow
+  const goldLight = new THREE.PointLight(0xC9A96E, 3.5, 18);
+  goldLight.position.set(2, 2, 4);
+  scene.add(goldLight);
+
+  // Cool rim light adds depth separation
+  scene.add(new THREE.PointLight(0x8899cc, 1.2, 20)).position.set(-4, -2, 2);
+
+  // ── Particle field (Interactive Element #3: mouse-parallax depth) ─
+  const N = 3000;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const r = 25 + Math.random() * 40;
+    const theta = Math.random() * Math.PI * 2;
+    const phi   = Math.acos(2 * Math.random() - 1);
+    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i*3+2] = r * Math.cos(phi) - 20;
+  }
+  const partGeo = new THREE.BufferGeometry();
+  partGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
+    color: 0xC9A96E, size: 0.05, transparent: true, opacity: 0.35, sizeAttenuation: true
+  }));
+  scene.add(particles);
+
+  // ── Hero Orb (Interactive Element #1: rotating, reacts to mouse) ──
+  const orbGroup = new THREE.Group();
+  orbGroup.position.set(2.8, 0, 0);
+  scene.add(orbGroup);
+
+  // Solid inner icosahedron
+  const innerMat = new THREE.MeshPhongMaterial({ color: 0x0e0e10, emissive: 0x1a1206, shininess: 90, transparent: true, opacity: 0.92 });
+  orbGroup.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.6, 4), innerMat));
+
+  // Wireframe outer shell — slightly larger, rotates independently
+  const wireMesh = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(1.72, 2),
+    new THREE.MeshBasicMaterial({ color: 0xC9A96E, wireframe: true, transparent: true, opacity: 0.22 })
+  );
+  orbGroup.add(wireMesh);
+
+  // Three orbiting gold rings at different tilts
+  function makeRing(r, opacity, rx, rz) {
+    const m = new THREE.Mesh(
+      new THREE.TorusGeometry(r, 0.006, 8, 120),
+      new THREE.MeshBasicMaterial({ color: 0xC9A96E, transparent: true, opacity })
+    );
+    m.rotation.x = rx; m.rotation.z = rz || 0;
+    return m;
+  }
+  const ring1 = makeRing(2.1, 0.5,  Math.PI/2, 0);
+  const ring2 = makeRing(2.1, 0.3,  Math.PI/3, Math.PI/5);
+  const ring3 = new THREE.Mesh(
+    new THREE.TorusGeometry(2.4, 0.003, 6, 140),
+    new THREE.MeshBasicMaterial({ color: 0xC9A96E, transparent: true, opacity: 0.15 })
+  );
+  ring3.rotation.set(Math.PI*0.4, Math.PI*0.2, 0);
+  orbGroup.add(ring1, ring2, ring3);
+
+  // ── Burst system ─────────────────────────────────────────────────
+  let burstActive = false, burstT = 0;
+  const burstLines = [];
+
+  function createBurst() {
+    burstLines.forEach(l => scene.remove(l));
+    burstLines.length = 0;
+    burstT = 0; burstActive = true;
+    for (let i = 0; i < 80; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi   = Math.acos(2 * Math.random() - 1);
+      const dir   = new THREE.Vector3(Math.sin(phi)*Math.cos(theta), Math.sin(phi)*Math.sin(theta), Math.cos(phi));
+      const lGeo  = new THREE.BufferGeometry().setFromPoints([orbGroup.position.clone(), orbGroup.position.clone().addScaledVector(dir, 0.01)]);
+      const line  = new THREE.Line(lGeo, new THREE.LineBasicMaterial({ color: 0xC9A96E, transparent: true, opacity: 0.85 }));
+      line.userData = { dir, speed: 0.12 + Math.random() * 0.18 };
+      scene.add(line); burstLines.push(line);
+    }
+  }
+  window.triggerHeroBurst = createBurst; // exposed to HTML
+
+  // ── Main animation loop ──────────────────────────────────────────
+  let pulseT = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = performance.now() * 0.001;
+
+    // Smooth mouse follow (lerp)
+    mouse.x += (mouse.tx - mouse.x) * 0.04;
+    mouse.y += (mouse.ty - mouse.y) * 0.04;
+
+    // Camera parallax — entire 3D world shifts subtly with cursor
+    camera.position.x = mouse.x * 0.8;
+    camera.position.y = -mouse.y * 0.5;
+    camera.lookAt(0, 0, 0);
+
+    // Particle drift
+    particles.rotation.y = t * 0.015;
+    particles.rotation.x = Math.sin(t * 0.008) * 0.15;
+
+    // Orb rotation
+    orbGroup.rotation.y = t * 0.22;
+    orbGroup.rotation.x = Math.sin(t * 0.15) * 0.12;
+    wireMesh.rotation.y = -t * 0.11;
+    wireMesh.rotation.z =  t * 0.07;
+    ring1.rotation.z = t * 0.3;
+    ring2.rotation.z = -t * 0.18;
+    ring3.rotation.y = t * 0.24;
+
+    // Orb breathing
+    pulseT += 0.008;
+    orbGroup.scale.setScalar(1 + Math.sin(pulseT) * 0.025);
+
+    // Burst update
+    if (burstActive) {
+      burstT += 0.018;
+      burstLines.forEach(line => {
+        const pts = line.geometry.attributes.position;
+        pts.array[3] += line.userData.dir.x * line.userData.speed;
+        pts.array[4] += line.userData.dir.y * line.userData.speed;
+        pts.array[5] += line.userData.dir.z * line.userData.speed;
+        pts.needsUpdate = true;
+        line.material.opacity = Math.max(0, 0.85 - burstT * 1.1);
+      });
+      if (burstT > 0.85) { burstLines.forEach(l => scene.remove(l)); burstLines.length = 0; burstActive = false; }
+    }
+
+    // Gold light orbits
+    goldLight.position.x = Math.sin(t * 0.5) * 3;
+    goldLight.position.y = Math.cos(t * 0.35) * 2;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    const W = window.innerWidth, H = window.innerHeight;
+    camera.aspect = W / H; camera.updateProjectionMatrix();
+    renderer.setSize(W, H);
+  });
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCENE 2 — ABOUT CARD (Interactive Element #2)
+   Rotating geometric totem. Reacts to mouse position within the card.
+   ═══════════════════════════════════════════════════════════════════ */
+(function initAboutScene() {
+  const canvas = document.getElementById('about-canvas');
+  if (!canvas) return;
+  const card = canvas.parentElement;
+
+  function getSize() { return { w: card.clientWidth, h: card.clientHeight }; }
+  const { w, h } = getSize();
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(w, h);
+  renderer.setClearColor(0x000000, 0);
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
+  camera.position.z = 5;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.1));
+  const gl = new THREE.PointLight(0xC9A96E, 4, 15);
+  gl.position.set(2, 3, 3); scene.add(gl);
+
+  // Totem: stack of three geometric forms
+  const group = new THREE.Group();
+  scene.add(group);
+  const solidMat = new THREE.MeshPhongMaterial({ color: 0x1a1206, emissive: 0x0a0804, shininess: 120, transparent: true, opacity: 0.88 });
+
+  // Base: octahedron
+  const base = new THREE.Mesh(new THREE.OctahedronGeometry(0.9, 0), solidMat);
+  base.position.y = -1.2; group.add(base);
+
+  // Middle: wireframe icosahedron
+  const mid = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.7, 1),
+    new THREE.MeshBasicMaterial({ color: 0xC9A96E, wireframe: true, transparent: true, opacity: 0.4 })
+  );
+  group.add(mid);
+
+  // Top: tetrahedron
+  const top = new THREE.Mesh(new THREE.TetrahedronGeometry(0.6, 0), solidMat.clone());
+  top.position.y = 1.1; group.add(top);
+
+  // Orbiting belt
+  const belt = new THREE.Mesh(
+    new THREE.TorusGeometry(1.0, 0.008, 6, 80),
+    new THREE.MeshBasicMaterial({ color: 0xC9A96E, transparent: true, opacity: 0.6 })
+  );
+  belt.rotation.x = Math.PI / 2; group.add(belt);
+
+  // Mouse hover tracking within the card
+  let hX = 0, hY = 0;
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    hX = ((e.clientX - r.left) / r.width  - 0.5) * 2;
+    hY = ((e.clientY - r.top)  / r.height - 0.5) * 2;
+  });
+  card.addEventListener('mouseleave', () => { hX = 0; hY = 0; });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = performance.now() * 0.001;
+    group.rotation.y = t * 0.4 + hX * 0.6;
+    group.rotation.x = Math.sin(t * 0.3) * 0.2 - hY * 0.3;
+    base.rotation.z = t * 0.25;
+    top.rotation.y  = -t * 0.35;
+    belt.rotation.z = t * 0.5;
+    gl.position.x   = Math.sin(t * 0.6) * 2;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Keep sub-scene sized to its card
+  try {
+    const ro = new ResizeObserver(() => {
+      const { w, h } = getSize();
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+    ro.observe(card);
+  } catch(e) {}
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════════════════ */
+
+// Smooth scroll to section by id
+function smoothScrollTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Gold ripple at click position (portfolio card click feedback)
+function cardRipple(e, card) {
+  const r = card.getBoundingClientRect();
+  const rip = document.createElement('span');
+  const d = Math.max(r.width, r.height);
+  rip.className = 'ripple';
+  rip.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
+  card.appendChild(rip);
+  setTimeout(() => rip.remove(), 700);
+}
+
+// Form submit with state feedback
+function submitForm(btn) {
+  btn.textContent = 'Sending\u2026';
+  btn.style.opacity = '0.7';
+  setTimeout(() => {
+    btn.innerHTML = 'Enquiry received &#8594;';
+    btn.style.cssText += 'opacity:1;background:rgba(201,169,110,0.25);color:var(--ivory);border:1px solid rgba(201,169,110,0.4)';
+  }, 1400);
+}
+
+// ─── SCROLL: sticky nav + reveal animations ──────────────────────────
+const nav = document.getElementById('main-nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+}, { passive: true });
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// ─── 3D PERSPECTIVE TILT on testimonial cards ────────────────────────
+// Gives each card a physical, tactile quality on desktop hover
+document.querySelectorAll('[data-tilt]').forEach(card => {
+  card.style.transition = 'transform 0.12s ease, box-shadow 0.3s';
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const cx = (e.clientX - r.left) / r.width  - 0.5;
+    const cy = (e.clientY - r.top)  / r.height - 0.5;
+    card.style.transform = `perspective(800px) rotateY(${cx*10}deg) rotateX(${-cy*10}deg) translateY(-4px)`;
+    card.style.boxShadow = `${-cx*20}px ${cy*20}px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(201,169,110,${0.1+Math.abs(cx)*0.15})`;
+  });
+  card.addEventListener('mouseleave', () => { card.style.transform = ''; card.style.boxShadow = ''; });
+});
+</script>
+</body>
+</html>
